@@ -388,6 +388,14 @@ sysctl -w kern.raphael_dcs_level=120
 
 **用户已确认亮度可见变化**，`last_error=0` 且写入后显示持续扫描。硬件发送路径达标；仍未完成的是把 sysctl 接入系统亮度滑块，以及熄屏/唤醒恢复验证。`0x52` 回读仅在需要独立面板寄存器证据时再实现，不是当前亮度写入的阻塞项。
 
+**2026-11-15：亮度条已打通（0284-0289）**
+
+`hardware-max-current-limit` 是最后一块：`UniXNU-pclm10` 的设备记录写明 CoreBrightness 在启动 libEDR、接受
+`brightness-nits` 之前要求 `backlight-calibration-parameters` 的**九个键齐全**（含 `current-for-max/mid-backlight`
+和 `hardware-max-current-limit`）；Trogdor-ipadOS 的 `CoachzBacklight.cpp` 给出的可用集合是六个 `l*Product/l*Panel`
+（16.16 nits）+ 上面三个 0 值。`0289` 按这份集合发布后，backboardd 不再崩溃，日志出现
+`SWEET FB: backlight level N -> DCS 0x51: 0` 的连续写入（1070 → 8 → 1025 …），**用户确认控件亮度条可用**。
+
 **2026-11-15：滑块接线的现状（0284-0288，未完成）**
 
 `0284` 把 `IOMobileFramebufferUserClient` 的 selector 50（`setBrightnessCorrection`，0..10000）接到
