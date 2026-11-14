@@ -388,6 +388,20 @@ sysctl -w kern.raphael_dcs_level=120
 
 **用户已确认亮度可见变化**，`last_error=0` 且写入后显示持续扫描。硬件发送路径达标；仍未完成的是把 sysctl 接入系统亮度滑块，以及熄屏/唤醒恢复验证。`0x52` 回读仅在需要独立面板寄存器证据时再实现，不是当前亮度写入的阻塞项。
 
+**2026-11-15 补充：背光服务被接受后，GPU 毛玻璃仍未回来**
+
+用户确认：亮度可用，但“依赖 GPU 的毛玻璃完全没有回来”。因此毛玻璃缺失**不是**背光/EDR 绑定造成的，而是
+GPU/CoreAnimation 的另一条路径。下一步排查顺序：
+
+1. 确认这套 iOS 18 树上毛玻璃是否曾经工作过，用 `git bisect` + `fastboot boot` 在 448fd78/f399ef3 与当前
+   HEAD 之间找分界（每次用现成镜像，不改 rootfs）。
+2. 用 `sweetgpu=0`（或关 GPU 驱动）启动，看毛玻璃是否出现：出现 = GPU 驱动侧；仍无 = CA/合成侧。
+3. 若在 GPU：检查 `sweet_a630.c` 对 backdrop 需要的 render-to-texture / 纹理读回（MTLTextureUsage
+   renderTarget|shaderRead）和 IOSurface 使用标志（0187 的 import 路径）是否被拒绝；CA 在拿不到可用纹理时
+   会静默降级为不透明。
+4. 黑块与毛玻璃很可能是同一批 blur 层的两种表现（有 blur 时黑块、无 blur 时纯色），修毛玻璃时要把 scanout
+   的多层/合成路径一起看，避免“修好一个坏另一个”。
+
 **2026-11-15：亮度条已打通（0284-0289）**
 
 `hardware-max-current-limit` 是最后一块：`UniXNU-pclm10` 的设备记录写明 CoreBrightness 在启动 libEDR、接受
