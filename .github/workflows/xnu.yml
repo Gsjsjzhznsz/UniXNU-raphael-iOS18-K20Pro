@@ -83,6 +83,8 @@ jobs:
           # script finds them next to itself.
           cp xnu/patches-11215/sweet_scanout.c xnu/patches-11215/sweet_scanout.h 'dxb/patches/15.0/'
           cp xnu/patches-11215/raphael_dsi.c xnu/patches-11215/raphael_dsi.h 'dxb/patches/15.0/'
+          # ... and the Wi-Fi glue (0290): the sources stay next to their stage script.
+          cp xnu/patches-11215/hakios.*.c xnu/patches-11215/hakios.*.h 'dxb/patches/15.0/'
           PDIR=dxb/patches/15.0
           # libfirehose_kernel is built arm64e-only; the SWEET kernel is plain arm64
           sed -i '' 's/ARCHS="x86_64 arm64e" VALID_ARCHS="x86_64 arm64e"/ARCHS="x86_64 arm64e arm64" VALID_ARCHS="x86_64 arm64e arm64"/' dxb/build.sh
