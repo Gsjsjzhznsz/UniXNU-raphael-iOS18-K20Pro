@@ -6,26 +6,24 @@ Two paths reach the panel, and both were missing:
    control to. The service added in 0243/0249 published backlight-control and
    IODisplayParameters.brightness, which made backboardd find it -- and then
    crash inside CoreBrightness-+0x14659c, in CoreFoundation, with a NULL
-   object (reproduced on the phone: sig 11 code 0xb, far 0). UniXNU's
-   ShengBacklight documents the property set CoreBrightness reads; this patch
-   publishes it (marketing table, Lmin/Lmid/Lmax products, calibration
-   dictionary, IODisplayParameters.brightness and BrightnessMilliNits, 2/140/
-   500 nits), takes both request forms (brightness 0..2047 and brightness-nits
-   signed 16.16), and turns the service on by default for raphael -- without
-   it the slider is frozen. A level becomes one DCS 0x51 packet through
-   raphael_dsi.c (sweetfb_blsvc=0 turns the service off, raphael_dcs=0 the DCS
-   path).
-
-   The crash persisted, so the patch carries the diagnosis: a disassembly of
-   CoreBrightness+0x14659c shows IORegistryEntryCreateCFProperty ->
-   CFDictionaryGetValue(dict, key) -> CFNumberGetValue(value,
-   kCFNumberFloatType) -> /65536.0; one of the lookups returns NULL and the
-   conversion faults. Every property read and user-client open is logged
-   (0286), new-backlight-architecture is published (0287), and the calibration
-   and luminance numbers are published in IODisplayParameters as well as in
-   backlight-calibration-parameters, under both naming schemes the framework's
-   strings show (l*Product/l*Panel/current-for-*-backlight and
-   Display*Luminance*/MaxNitsPanel/PanelMax) (0288).
+   object (reproduced on the phone: sig 11 code 0xb, far 0). A disassembly of
+   that address shows IORegistryEntryCreateCFProperty -> CFDictionaryGetValue
+   (dict, key) -> CFNumberGetValue(value, kCFNumberFloatType) -> /65536.0: a
+   calibration lookup returns NULL. UniXNU-pclm10's record says CoreBrightness
+   requires all nine backlight-calibration-parameters keys (including
+   current-for-max/mid-backlight and hardware-max-current-limit) before it
+   starts the libEDR server and delivers brightness-nits. This patch publishes
+   exactly the set a working AppleARMBacklight publishes (Trogdor-ipadOS
+   CoachzBacklight.cpp: the six l*Product/l*Panel luminances as 16.16 nits,
+   current-for-*-backlight and hardware-max-current-limit as 0, plus
+   milliAmps2NitsScaleFactor), the marketing table and
+   new-backlight-architecture, IODisplayParameters.brightness/BrightnessMilliNits
+   (2/140/500 nits), takes both request forms (brightness 0..2047 and
+   brightness-nits signed 16.16), and turns the service on by default for
+   raphael -- without it the slider is frozen. A level becomes one DCS 0x51
+   packet through raphael_dsi.c (sweetfb_blsvc=0 turns the service off,
+   raphael_dcs=0 the DCS path). Every property read is logged (0286) while the
+   service is being brought up.
 
 2. The iOS 18 USB log shows backboardd calling IOMobileFramebuffer selector
    50 (setBrightnessCorrection) with 0..10000 units. externalMethod had no
@@ -34,7 +32,7 @@ Two paths reach the panel, and both were missing:
    the small levels), as ios-raphael patch 0100 does.
 
 diff --git a/iokit/Kernel/arm/SweetFramebuffer.cpp b/iokit/Kernel/arm/SweetFramebuffer.cpp
-index 1b07788..9cc1a1d 100644
+index 1b07788..71a211f 100644
 --- a/iokit/Kernel/arm/SweetFramebuffer.cpp
 +++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
 @@ -46,6 +46,7 @@ extern "C" vm_offset_t ml_io_map(vm_offset_t phys_addr, vm_size_t size);
@@ -161,8 +159,8 @@ index 1b07788..9cc1a1d 100644
 +			{ "lMaxProduct", sweetBlMaxNits << 16 }, { "lMidProduct", sweetBlMidNits << 16 },
 +			{ "lMinProduct", sweetBlMinNits << 16 }, { "lMaxPanel", sweetBlMaxNits << 16 },
 +			{ "lMidPanel", sweetBlMidNits << 16 }, { "lMinPanel", sweetBlMinNits << 16 },
-+			{ "current-for-max-backlight", RAPHAEL_DSI_LEVEL_MAX << 16 },
-+			{ "current-for-mid-backlight", (RAPHAEL_DSI_LEVEL_MAX / 2) << 16 },
++			{ "current-for-max-backlight", 0 }, { "current-for-mid-backlight", 0 },
++			{ "hardware-max-current-limit", 0 }, { "milliAmps2NitsScaleFactor", 0 },
 +				{ "DisplayPanelLuminanceMin", sweetBlMinNits << 16 }, { "DisplayPanelLuminanceMid", sweetBlMidNits << 16 },
 +			{ "DisplayPanelLuminanceMax", sweetBlMaxNits << 16 }, { "DisplayProductLuminanceMin", sweetBlMinNits << 16 },
 +			{ "DisplayProductLuminanceMid", sweetBlMidNits << 16 }, { "DisplayProductLuminanceMax", sweetBlMaxNits << 16 },
@@ -199,7 +197,7 @@ index 1b07788..9cc1a1d 100644
 +		setProperty("LmidProduct", lmid);
 +		lmid->release();
 +	}
-+	OSDictionary *calibration = OSDictionary::withCapacity(6);
++	OSDictionary *calibration = OSDictionary::withCapacity(10);
 +	if (calibration) {
 +		const struct { const char *key; uint32_t nits; } fields[] = {
 +			{ "lMinProduct", sweetBlMinNits }, { "lMidProduct", sweetBlMidNits }, { "lMaxProduct", sweetBlMaxNits },
@@ -213,8 +211,8 @@ index 1b07788..9cc1a1d 100644
 +			}
 +		}
 +		const struct { const char *key; uint32_t value; } current[] = {
-+			{ "current-for-max-backlight", RAPHAEL_DSI_LEVEL_MAX << 16 },
-+			{ "current-for-mid-backlight", (RAPHAEL_DSI_LEVEL_MAX / 2) << 16 },
++			{ "current-for-max-backlight", 0 }, { "current-for-mid-backlight", 0 },
++			{ "hardware-max-current-limit", 0 }, { "milliAmps2NitsScaleFactor", 0 },
 +				{ "DisplayPanelLuminanceMin", sweetBlMinNits << 16 }, { "DisplayPanelLuminanceMid", sweetBlMidNits << 16 },
 +			{ "DisplayPanelLuminanceMax", sweetBlMaxNits << 16 }, { "DisplayProductLuminanceMin", sweetBlMinNits << 16 },
 +			{ "DisplayProductLuminanceMid", sweetBlMidNits << 16 }, { "DisplayProductLuminanceMax", sweetBlMaxNits << 16 },
