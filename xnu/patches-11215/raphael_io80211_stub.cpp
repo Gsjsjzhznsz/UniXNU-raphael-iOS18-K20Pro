@@ -125,6 +125,19 @@ IO80211UserClient::externalMethod(uint32_t selector, IOExternalMethodArguments *
 		    (unsigned)(arguments ? arguments->structureInputSize : 0),
 		    (unsigned)(arguments ? arguments->structureOutputSize : 0));
 	}
+	if (arguments != NULL && said < 60) {
+		uint64_t s0 = arguments->scalarInputCount > 0 ? arguments->scalarInput[0] : 0;
+		uint64_t s1 = arguments->scalarInputCount > 1 ? arguments->scalarInput[1] : 0;
+		uint64_t s2 = arguments->scalarInputCount > 2 ? arguments->scalarInput[2] : 0;
+		uint32_t in0 = 0;
+		if (arguments->structureInput != NULL && arguments->structureInputSize >= 4) {
+			in0 = *(const uint32_t *)arguments->structureInput;
+		}
+		printf("HAKIOS IO80211: call sel %u scalars %u [%llx %llx %llx] struct in %u first %x\n",
+		    (unsigned)selector, (unsigned)arguments->scalarInputCount,
+		    (unsigned long long)s0, (unsigned long long)s1, (unsigned long long)s2,
+		    (unsigned)arguments->structureInputSize, in0);
+	}
 	if (arguments != NULL && arguments->structureOutput != NULL && arguments->structureOutputSize > 0) {
 		bzero(arguments->structureOutput, arguments->structureOutputSize);
 		if (arguments->structureOutputSize == 1) {
