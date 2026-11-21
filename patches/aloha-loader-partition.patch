@@ -1,5 +1,5 @@
 diff --git a/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c b/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c
-index be884abd..8c8cf56b 100644
+index be884abd..d90c3e0c 100644
 --- a/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c
 +++ b/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c
 @@ -36,6 +36,9 @@
@@ -226,6 +226,32 @@ index be884abd..8c8cf56b 100644
      if (Status != EFI_SUCCESS) {
        DEBUG ((EFI_D_ERROR, "LoadImageAndAuth failed: %r\n", Status));
        goto fastboot;
+@@ -316,7 +499,13 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+       DEBUG ((EFI_D_ERROR, "Failed to wait for display completion: %r\n",
+                   Status));
+     }
+-    BootLinux (&Info);
++    Status = BootLinux (&Info);
++    if (EFI_ERROR (Status)) {
++      CHAR8 Tag[20];
++      AsciiSPrint (Tag, sizeof (Tag), "FAILB%08x", (UINT32)Status);
++      FastbootMenuSetTag (Tag);
++      DEBUG ((EFI_D_ERROR, "LinuxLoader: BootLinux failed: %r\n", Status));
++    }
+   }
+ 
+ fastboot:
+diff --git a/Platforms/QcomModulePkg/Include/Library/DrawUI.h b/Platforms/QcomModulePkg/Include/Library/DrawUI.h
+index 72260dd0..f4d8ea4f 100644
+--- a/Platforms/QcomModulePkg/Include/Library/DrawUI.h
++++ b/Platforms/QcomModulePkg/Include/Library/DrawUI.h
+@@ -166,4 +166,6 @@ EFI_STATUS BackUpBootLogoBltBuffer (VOID);
+ VOID RestoreBootLogoBitBuffer (VOID);
+ VOID FreeBootLogoBltBuffer (VOID);
+ VOID DrawMenuInit (VOID);
++VOID FastbootMenuSetTag (CONST CHAR8 *Tag);
++
+ #endif
 diff --git a/Platforms/QcomModulePkg/Include/Library/LinuxLoaderLib.h b/Platforms/QcomModulePkg/Include/Library/LinuxLoaderLib.h
 index 5bab90fc..e6463e57 100644
 --- a/Platforms/QcomModulePkg/Include/Library/LinuxLoaderLib.h
@@ -264,11 +290,24 @@ index 2e3003a4..2a5fc2b4 100644
        BootParamlistPtr.ImageBuffer == NULL ||
        BootParamlistPtr.ImageSize <= 0) {
 diff --git a/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c b/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c
-index a7ffcb97..559a72aa 100644
+index a7ffcb97..39f97dc8 100644
 --- a/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c
 +++ b/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c
-@@ -43,7 +43,7 @@
+@@ -41,9 +41,20 @@
+ #include <Uefi.h>
+ 
  STATIC OPTION_MENU_INFO gMenuInfo;
++/* Replace the first fastboot menu entry with a bench marker (why the boot
++ * path came back). Used by the chainloaded LinuxLoader diagnostics. */
++VOID
++FastbootMenuSetTag (CONST CHAR8 *Tag)
++{
++  if (Tag == NULL) {
++    return;
++  }
++  AsciiStrnCpyS (mFastbootOptionTitle[0].Msg, MAX_MSG_SIZE, Tag, MAX_MSG_SIZE - 1);
++}
++
  
  STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
 -    {{"Start"},
