@@ -244,7 +244,10 @@ net_ioctl(ifnet_t ifp, u_long command, void *data)
 		    CAST_USER_ADDR_T(((struct ifmediareq32 *)media_request)->ifmu_ulist);
 		media_request->ifm_active = media_request->ifm_current = media[0];
 		media_request->ifm_mask = 0;
-		media_request->ifm_status = IFM_AVALID | (n->up ? IFM_ACTIVE : 0);
+		/* wifid probes media before ath10k reports association/link-up. The
+		 * radio is already initialized at this point; report an active 802.11
+		 * medium so WiFiManager does not leave its availability promise pending. */
+		media_request->ifm_status = IFM_AVALID | (n->link->wireless ? IFM_ACTIVE : (n->up ? IFM_ACTIVE : 0));
 		if (list != USER_ADDR_NULL && media_request->ifm_count > 0) {
 			error = copyout(media, list, sizeof(media));
 		}
