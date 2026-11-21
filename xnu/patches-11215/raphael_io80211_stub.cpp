@@ -302,15 +302,16 @@ hakios_io80211_stub_start(void)
 		controller->attach(parent);
 		controller->start(parent);
 	}
-	IO80211SkywalkInterface *skywalk = new IO80211SkywalkInterface;
-	if (skywalk != NULL && skywalk->init()) {
-		skywalk->attach(parent);
-		skywalk->start(parent);
-	}
 	AppleWLANDriver *driver = new AppleWLANDriver;
 	if (driver != NULL && driver->init()) {
 		driver->attach(parent);
 		driver->start(parent);
+	}
+	IO80211SkywalkInterface *skywalk = new IO80211SkywalkInterface;
+	if (skywalk != NULL && skywalk->init()) {
+		IOService *skywalkParent = driver != NULL ? (IOService *)driver : parent;
+		skywalk->attach(skywalkParent);
+		skywalk->start(skywalkParent);
 	}
 	AppleSunriseWLAN *sunrise = new AppleSunriseWLAN;
 	if (sunrise != NULL && sunrise->init()) {
