@@ -221,14 +221,14 @@ IO80211SkywalkInterface::start(IOService *provider)
 
 
 /* Apple's Skywalk Wi-Fi driver classes, named next to the interface roles in wifid. */
-class HAKIOSIONetworkInterface : public IOService {
-	OSDeclareDefaultStructors(HAKIOSIONetworkInterface)
+class IONetworkInterface : public IOService {
+	OSDeclareDefaultStructors(IONetworkInterface)
 public:
 	bool start(IOService *provider) override;
 };
-OSDefineMetaClassAndStructors(HAKIOSIONetworkInterface, IOService)
+OSDefineMetaClassAndStructors(IONetworkInterface, IOService)
 bool
-HAKIOSIONetworkInterface::start(IOService *provider)
+IONetworkInterface::start(IOService *provider)
 {
 	if (!IOService::start(provider)) return false;
 	setProperty("IOClass", "IONetworkInterface");
@@ -322,7 +322,7 @@ hakios_io80211_stub_start(void)
 		controller->attach(parent);
 		controller->start(parent);
 	}
-	HAKIOSIONetworkInterface *netif = new HAKIOSIONetworkInterface;
+	IONetworkInterface *netif = new IONetworkInterface;
 	if (netif != NULL && netif->init()) {
 		netif->attach(parent);
 		netif->start(parent);
