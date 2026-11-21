@@ -201,6 +201,8 @@ IO80211SkywalkInterface::start(IOService *provider)
 	}
 	setProperty("IOClass", "IO80211SkywalkInterface");
 	setProperty("IOInterfaceName", "en0");
+	setProperty("IOBSDName", "en0");
+	setProperty("IOInterfaceType", "IEEE80211");
 	setProperty("IO80211InterfaceRole", "Infrastructure");
 	setProperty("IO80211InterfaceProductType", 0x10ULL, 32);
 	setProperty("IO80211InterfaceRadioMODE", 0x1ULL, 32);
