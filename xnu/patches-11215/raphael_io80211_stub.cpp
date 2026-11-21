@@ -221,6 +221,26 @@ IO80211SkywalkInterface::start(IOService *provider)
 
 
 /* Apple's Skywalk Wi-Fi driver classes, named next to the interface roles in wifid. */
+class HAKIOSIONetworkInterface : public IOService {
+	OSDeclareDefaultStructors(HAKIOSIONetworkInterface)
+public:
+	bool start(IOService *provider) override;
+};
+OSDefineMetaClassAndStructors(HAKIOSIONetworkInterface, IOService)
+bool
+HAKIOSIONetworkInterface::start(IOService *provider)
+{
+	if (!IOService::start(provider)) return false;
+	setProperty("IOClass", "IONetworkInterface");
+	setProperty("IOBSDName", "en0");
+	setProperty("IOInterfaceName", "en0");
+	setProperty("IOInterfaceNamePrefix", "en");
+	setProperty("IOInterfaceUnit", 0ULL, 32);
+	setProperty("IOInterfaceType", "IEEE80211");
+	registerService();
+	return true;
+}
+
 class AppleWLANDriver : public IOService {
 	OSDeclareDefaultStructors(AppleWLANDriver)
 public:
@@ -302,10 +322,16 @@ hakios_io80211_stub_start(void)
 		controller->attach(parent);
 		controller->start(parent);
 	}
+	HAKIOSIONetworkInterface *netif = new HAKIOSIONetworkInterface;
+	if (netif != NULL && netif->init()) {
+		netif->attach(parent);
+		netif->start(parent);
+	}
 	AppleWLANDriver *driver = new AppleWLANDriver;
 	if (driver != NULL && driver->init()) {
-		driver->attach(parent);
-		driver->start(parent);
+		IOService *driverParent = netif != NULL ? (IOService *)netif : parent;
+		driver->attach(driverParent);
+		driver->start(driverParent);
 	}
 	IO80211SkywalkInterface *skywalk = new IO80211SkywalkInterface;
 	if (skywalk != NULL && skywalk->init()) {
