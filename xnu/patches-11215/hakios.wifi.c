@@ -5517,6 +5517,9 @@ whole_thread(__unused void *parameter, __unused wait_result_t result)
 	if (failed == 0) {
 		tell("wifi: THE RADIO IS UP, %llu.%llu s after the kernel began on it\n", (now_us() - began) / 1000000,
 		    (now_us() - began) / 100000 % 10);
+		/* The ath10k glue never sends a link-up callback after firmware start.
+		 * wifid sees en0 as 802.11 but inactive and leaves WiFiManager unavailable. */
+		lx_os_net_link(1);
 		hakios_io80211_stub_start();
 		join_given(began);
 	} else {
