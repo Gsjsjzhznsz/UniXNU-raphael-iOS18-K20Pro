@@ -205,6 +205,12 @@ IO80211SkywalkInterface::start(IOService *provider)
 	setProperty("IOInterfaceUnit", 0ULL, 32);
 	setProperty("IOBSDName", "en0");
 	setProperty("IOInterfaceType", "IEEE80211");
+	static const uint8_t wifiAddress[6] = { 0xe0, 0xdc, 0xff, 0xda, 0xf8, 0xe7 };
+	OSData *address = OSData::withBytes(wifiAddress, sizeof(wifiAddress));
+	if (address != NULL) {
+		setProperty("WifiAddressData", address);
+		address->release();
+	}
 	setProperty("IO80211InterfaceRole", "Infrastructure");
 	setProperty("IO80211InterfaceProductType", 0x10ULL, 32);
 	setProperty("IO80211InterfaceRadioMODE", 0x1ULL, 32);
