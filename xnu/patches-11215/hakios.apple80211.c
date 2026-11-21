@@ -212,7 +212,15 @@ _Static_assert(sizeof(struct apple80211_ssid) == 40 && offsetof(struct apple8021
 
 /* Apple80211's events (APPLE80211_M_...) */
 enum { EVENT_POWER_CHANGED = 1, EVENT_SSID_CHANGED = 2, EVENT_BSSID_CHANGED = 3, EVENT_LINK_CHANGED = 4, EVENT_ASSOC_DONE = 9,
-       EVENT_SCAN_DONE = 10 };
+       EVENT_SCAN_DONE = 10, EVENT_DRIVER_AVAILABLE = 55 };
+
+struct apple80211_driver_available_data {
+	uint64_t event;
+	uint64_t available;
+	uint32_t reason;
+	uint32_t sub_reason;
+	char pad[160];
+} __attribute__((packed));
 
 static const char interface_name[16] = "en0";   /* (bsd/dev/hakios.net.c makes one interface, and that is its name) */
 
@@ -751,6 +759,10 @@ hakios_apple80211_event(enum hakios_sta_event event, int status)
 {
 	static unsigned said;
 
+	if (event == HAKIOS_STA_POWER && status == 1) {
+		struct apple80211_driver_available_data available = { .event = EVENT_DRIVER_AVAILABLE, .available = 1 };
+		post(EVENT_DRIVER_AVAILABLE, &available, sizeof(available));
+	}
 	if (said < 200) {
 		said++;
 		printf("apple80211: the station says: %s, %d\n", event == HAKIOS_STA_POWER ? "power" : event == HAKIOS_STA_SCAN_DONE ?
