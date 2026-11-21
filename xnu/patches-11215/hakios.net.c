@@ -393,7 +393,7 @@ hakios_net_attach(const struct hakios_net_link *link)
 	ifnet_set_baudrate(ifp, 100 * 1000 * 1000);
 	ifnet_set_mtu(ifp, ETHERMTU);
 	ifnet_set_flags(ifp, IFF_BROADCAST | IFF_MULTICAST | IFF_SIMPLEX |
-	    (link->wireless && link->up ? IFF_UP : 0), 0xffff);
+	    (link->wireless && link->up ? (IFF_UP | IFF_RUNNING) : 0), 0xffff);
 	ifnet_set_hdrlen(ifp, ETHER_HDR_LEN);
 	ifnet_set_offload(ifp, 0);
 	error = ifnet_attach(ifp, NULL);
