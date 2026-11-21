@@ -107,7 +107,8 @@ IO80211UserClient::initWithTask(task_t owningTask, void *securityToken, UInt32 t
 	if (!IOUserClient::initWithTask(owningTask, securityToken, type, properties)) {
 		return false;
 	}
-	printf("HAKIOS IO80211: user client opened, type %u\n", (unsigned)type);
+	printf("HAKIOS IO80211: user client opened, type %u properties %s\n", (unsigned)type,
+	    properties != NULL ? properties->getMetaClass()->getClassName() : "none");
 	return true;
 }
 
