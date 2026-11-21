@@ -336,6 +336,7 @@ lx_os_net_attach(const unsigned char *address)
 	thread_set_thread_name(thread, "wifi-send");
 	thread_deallocate(thread);
 	memcpy(lx_link.address, address, sizeof(lx_link.address));
+	lx_link.up = true;
 	lx_link_attached = hakios_net_attach(&lx_link);
 	say("lx: %s\n", lx_link_attached ? "the radio is the link behind en0" : "EN0 HAS A LINK ALREADY: the radio's frames go "
 	    "nowhere");
