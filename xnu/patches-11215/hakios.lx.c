@@ -316,6 +316,7 @@ lx_link_transmit(mbuf_t packet, size_t length)
 static struct hakios_net_link lx_link = {
 	.name = "the phone's radio (ath11k)",
 	.wireless = true,
+	.up = true,              /* wifid needs SIOCGIFMEDIA to report IFM_ACTIVE during startup */
 	.transmit = lx_link_transmit,
 };
 
