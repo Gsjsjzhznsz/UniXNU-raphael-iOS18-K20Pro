@@ -125,6 +125,14 @@ IO80211UserClient::externalMethod(uint32_t selector, IOExternalMethodArguments *
 		    (unsigned)(arguments ? arguments->structureInputSize : 0),
 		    (unsigned)(arguments ? arguments->structureOutputSize : 0));
 	}
+	if (arguments != NULL && arguments->structureOutput != NULL && arguments->structureOutputSize > 0) {
+		bzero(arguments->structureOutput, arguments->structureOutputSize);
+		if (arguments->structureOutputSize == 1) {
+			((uint8_t *)arguments->structureOutput)[0] = 1;
+		} else if (selector == 0 && arguments->structureOutputSize >= 256) {
+			((uint32_t *)arguments->structureOutput)[0] = 1;   /* a version, not zero */
+		}
+	}
 	return kIOReturnSuccess;
 }
 
