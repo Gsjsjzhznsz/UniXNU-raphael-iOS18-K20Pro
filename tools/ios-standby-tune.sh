@@ -34,6 +34,12 @@ com.apple.analyticsagent
 com.apple.inputanalyticsd
 com.apple.PerfPowerServices
 com.apple.nsurlsessiond
+com.apple.cloudd
+com.apple.appstored
+com.apple.itunesstored
+com.apple.itunescloudd
+com.apple.storekitd
+com.apple.appstorecomponentsd
 "
 
 if [ "${1:-}" = "--show" ]; then
