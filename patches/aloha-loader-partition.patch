@@ -290,13 +290,23 @@ index 2e3003a4..2a5fc2b4 100644
        BootParamlistPtr.ImageBuffer == NULL ||
        BootParamlistPtr.ImageSize <= 0) {
 diff --git a/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c b/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c
-index a7ffcb97..39f97dc8 100644
+index a7ffcb97..820b523d 100644
 --- a/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c
 +++ b/Platforms/QcomModulePkg/Library/BootLib/FastbootMenu.c
-@@ -41,9 +41,20 @@
- #include <Uefi.h>
- 
+@@ -43,7 +43,7 @@
  STATIC OPTION_MENU_INFO gMenuInfo;
+ 
+ STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
+-    {{"Start"},
++    {{"ZXCVB"},
+      BIG_FACTOR,
+      BGR_GREEN,
+      BGR_BLACK,
+@@ -340,3 +340,15 @@ VOID DisplayFastbootMenu (VOID)
+     DEBUG ((EFI_D_INFO, "Display menu is not enabled!\n"));
+   }
+ }
++
 +/* Replace the first fastboot menu entry with a bench marker (why the boot
 + * path came back). Used by the chainloaded LinuxLoader diagnostics. */
 +VOID
@@ -308,10 +318,3 @@ index a7ffcb97..39f97dc8 100644
 +  AsciiStrnCpyS (mFastbootOptionTitle[0].Msg, MAX_MSG_SIZE, Tag, MAX_MSG_SIZE - 1);
 +}
 +
- 
- STATIC MENU_MSG_INFO mFastbootOptionTitle[] = {
--    {{"Start"},
-+    {{"ZXCVB"},
-      BIG_FACTOR,
-      BGR_GREEN,
-      BGR_BLACK,
