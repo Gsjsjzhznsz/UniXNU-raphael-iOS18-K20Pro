@@ -266,6 +266,11 @@ struct lx_frame {
 };
 
 static bool lx_link_attached;
+
+/* iokit/Kernel/arm/SweetNetwork.cpp (patch 0110) */
+extern int sweet_net_publish(const char *bsd_name, const char *prefix, unsigned unit,
+    const uint8_t *mac, const char *ip, const char *mask, const char *router,
+    const char *dns1, const char *dns2);
 static LCK_MTX_DECLARE(lx_queue_lock, &lx_lock_group);
 static struct lx_frame *lx_queue;
 static uint32_t lx_queue_in, lx_queue_out;      /* frames put in and taken out, counted from the start */
@@ -338,6 +343,10 @@ lx_os_net_attach(const unsigned char *address)
 	memcpy(lx_link.address, address, sizeof(lx_link.address));
 	lx_link.up = true;
 	lx_link_attached = hakios_net_attach(&lx_link);
+	if (lx_link_attached) {
+		int published = sweet_net_publish("en0", "en", 0, address, NULL, NULL, NULL, NULL, NULL);
+		say("lx: IOKit network tree %s", published ? "published" : "NOT published");
+	}
 	say("lx: %s\n", lx_link_attached ? "the radio is the link behind en0" : "EN0 HAS A LINK ALREADY: the radio's frames go "
 	    "nowhere");
 }
