@@ -1,5 +1,5 @@
 diff --git a/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c b/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c
-index be884abd..d90c3e0c 100644
+index be884abd..62b9c39c 100644
 --- a/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c
 +++ b/Platforms/QcomModulePkg/Application/LinuxLoader/LinuxLoader.c
 @@ -36,6 +36,9 @@
@@ -202,7 +202,7 @@ index be884abd..d90c3e0c 100644
      break;
    case RECOVERY_MODE:
      BootIntoRecovery = TRUE;
-@@ -305,7 +473,22 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+@@ -305,7 +473,25 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
      Info.MultiSlotBoot = MultiSlotBoot;
      Info.BootIntoRecovery = BootIntoRecovery;
      Info.BootReasonAlarm = BootReasonAlarm;
@@ -210,10 +210,13 @@ index be884abd..d90c3e0c 100644
 +    {
 +      Status = LinuxLoaderTryPayloadFile (&mBootFileBuffer, &mBootFileSize);
 +      if (Status == EFI_SUCCESS) {
-+        Info.NumLoadedImages = 1;
++        Info.NumLoadedImages = 2;
 +        Info.Images[0].Name = "boot";
 +        Info.Images[0].ImageBuffer = mBootFileBuffer;
 +        Info.Images[0].ImageSize = mBootFileSize;
++        Info.Images[1].Name = "recovery";
++        Info.Images[1].ImageBuffer = mBootFileBuffer;
++        Info.Images[1].ImageSize = mBootFileSize;
 +        DEBUG ((EFI_D_INFO, "LinuxLoader: Android.img from the payload volume (%u bytes)\n", (UINT32)mBootFileSize));
 +      } else {
 +        /* Diagnostic: the payload file could not be read. Hang here so the
@@ -226,7 +229,7 @@ index be884abd..d90c3e0c 100644
      if (Status != EFI_SUCCESS) {
        DEBUG ((EFI_D_ERROR, "LoadImageAndAuth failed: %r\n", Status));
        goto fastboot;
-@@ -316,7 +499,13 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
+@@ -316,7 +502,13 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
        DEBUG ((EFI_D_ERROR, "Failed to wait for display completion: %r\n",
                    Status));
      }
@@ -267,10 +270,10 @@ index 5bab90fc..e6463e57 100644
 +
  #endif
 diff --git a/Platforms/QcomModulePkg/Library/BootLib/BootLinux.c b/Platforms/QcomModulePkg/Library/BootLib/BootLinux.c
-index 2e3003a4..2a5fc2b4 100644
+index 2e3003a4..cdbfa278 100644
 --- a/Platforms/QcomModulePkg/Library/BootLib/BootLinux.c
 +++ b/Platforms/QcomModulePkg/Library/BootLib/BootLinux.c
-@@ -940,11 +940,13 @@ BootLinux (BootInfo *Info)
+@@ -940,11 +940,14 @@ BootLinux (BootInfo *Info)
    Status = GetImage (Info,
                       &BootParamlistPtr.ImageBuffer,
                       (UINTN *)&BootParamlistPtr.ImageSize,
@@ -279,7 +282,8 @@ index 2e3003a4..2a5fc2b4 100644
 -                        (Recovery &&
 -                        !IsBuildUseRecoveryAsBoot ()))?
 -                        "recovery" : "boot");
-+                     LinuxLoaderPartitionOverride () != NULL?
++                     (LinuxLoaderPartitionOverride () != NULL &&
++                      AsciiStrnCmp (LinuxLoaderPartitionOverride (), "file:", 5) != 0)?
 +                        LinuxLoaderPartitionOverride () :
 +                        (((!Info->MultiSlotBoot ||
 +                           IsDynamicPartitionSupport ()) &&
