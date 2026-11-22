@@ -35,7 +35,24 @@
  	ctrl->retain();
  	bool ctrl_ok = sweet_net_attach(ctrl, bus);
  	bus->release();
-@@ -248,6 +253,8 @@
+@@ -235,7 +240,15 @@
+ 		return 0;
+ 	}
+ 
+-	IOEthernetInterface *intf = OSTypeAlloc(IOEthernetInterface);
++	/* A wireless interface is published as a plain IONetworkInterface: an
++	 * IOEthernetInterface is what SystemConfiguration files under Ethernet,
++	 * and then no "AirPort" entity is made for it. */
++	IONetworkInterface *intf;
++	if (prefix != NULL && prefix[0] == 'e' && prefix[1] == 'n') {
++		intf = OSTypeAlloc(IONetworkInterface);
++	} else {
++		intf = OSTypeAlloc(IOEthernetInterface);
++	}
+ 	if (intf == NULL || !intf->init()) {
+ 		OSSafeReleaseNULL(intf);
+ 		ctrl->release();
+@@ -248,6 +261,8 @@
  	intf->setProperty("IOInterfaceNamePrefix", prefix);
  	intf->setProperty("IOInterfaceUnit", (unsigned long long)unit, 32);
  	intf->setProperty("HiddenConfiguration", kOSBooleanTrue);
