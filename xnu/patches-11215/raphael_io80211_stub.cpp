@@ -13,6 +13,8 @@
 #include <IOKit/IOService.h>
 #include <IOKit/IOUserClient.h>
 #include <IOKit/IOLib.h>
+#include <libkern/c++/OSBoolean.h>
+#include <libkern/c++/OSData.h>
 #include <pexpert/pexpert.h>
 #include <sys/systm.h>
 
@@ -78,6 +80,15 @@ IO80211Controller::start(IOService *provider)
 	}
 	setProperty("IOClass", "IO80211Controller");
 	setProperty("IO80211ControllerRole", "Station");
+	/* wifid walks from its interface service up to the controller it belongs
+	 * to and reads the hardware address there (HakiOS' proven iOS layout). */
+	static const uint8_t controllerAddress[6] = { 0xe0, 0xdc, 0xff, 0xda, 0xf8, 0xe7 };
+	OSData *controllerMac = OSData::withBytes(controllerAddress, sizeof(controllerAddress));
+	if (controllerMac != NULL) {
+		setProperty("IOMACAddress", controllerMac);
+		controllerMac->release();
+	}
+	setProperty("IOBuiltin", kOSBooleanTrue);
 	registerService();
 	return true;
 }
@@ -205,6 +216,10 @@ IO80211SkywalkInterface::start(IOService *provider)
 	setProperty("IO80211InterfaceRole", "Infrastructure");
 	setProperty("IO80211InterfaceProductType", 0x10ULL, 32);
 	setProperty("IO80211InterfaceRadioMODE", 0x1ULL, 32);
+	/* Same spelling and flags HakiOS uses on the object wifid accepts. */
+	setProperty("BSD Name", "en0");
+	setProperty("IOBuiltin", kOSBooleanTrue);
+	setProperty("IOPrimaryInterface", kOSBooleanTrue);
 	registerService();
 	return true;
 }
@@ -297,9 +312,12 @@ hakios_io80211_stub_start(void)
 		driver->attach(parent);
 		driver->start(parent);
 	}
+	/* The object wifid takes for its device hangs below the controller, the
+	 * way IO80211Family lays an interface out; its parent is where wifid reads
+	 * the hardware address and decides the interface is real, not virtual. */
 	IO80211SkywalkInterface *skywalk = new IO80211SkywalkInterface;
 	if (skywalk != NULL && skywalk->init()) {
-		IOService *skywalkParent = driver != NULL ? (IOService *)driver : parent;
+		IOService *skywalkParent = controller != NULL ? (IOService *)controller : parent;
 		skywalk->attach(skywalkParent);
 		skywalk->start(skywalkParent);
 	}
