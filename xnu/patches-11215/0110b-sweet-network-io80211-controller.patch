@@ -1,0 +1,46 @@
+--- a/iokit/Kernel/arm/SweetNetwork.cpp
++++ b/iokit/Kernel/arm/SweetNetwork.cpp
+@@ -84,10 +84,10 @@
+ };
+ OSDefineMetaClassAndStructors(IOEthernetInterface, IONetworkInterface);
+ 
+-class SweetEthernetController : public SweetNetService {
+-	OSDeclareDefaultStructors(SweetEthernetController);
++class IO80211Controller : public SweetNetService {
++	OSDeclareDefaultStructors(IO80211Controller);
+ };
+-OSDefineMetaClassAndStructors(SweetEthernetController, SweetNetService);
++OSDefineMetaClassAndStructors(IO80211Controller, SweetNetService);
+ 
+ class SweetNetworkBus : public IOService {
+ 	OSDeclareDefaultStructors(SweetNetworkBus);
+@@ -219,7 +219,7 @@
+ 		return 0;
+ 	}
+ 
+-	SweetEthernetController *ctrl = OSTypeAlloc(SweetEthernetController);
++	IO80211Controller *ctrl = OSTypeAlloc(IO80211Controller);
+ 	if (ctrl == NULL || !ctrl->init()) {
+ 		OSSafeReleaseNULL(ctrl);
+ 		bus->release();
+@@ -227,6 +227,11 @@
+ 	}
+ 	ctrl->setProperty("IOMACAddress", (void *)mac, 6);
+ 	ctrl->setProperty("SelfNamed", kOSBooleanTrue);
++	/* configd calls an IONetworkInterface a Wi-Fi interface when its parent is
++	 * of the class IO80211Controller; that is what makes it publish the
++	 * "AirPort" entity wifid builds its Wi-Fi devices from. */
++	ctrl->setProperty("IO80211ControllerRole", "Station");
++	ctrl->setProperty("IOBuiltin", kOSBooleanTrue);
+ 	ctrl->retain();
+ 	bool ctrl_ok = sweet_net_attach(ctrl, bus);
+ 	bus->release();
+@@ -248,6 +253,8 @@
+ 	intf->setProperty("IOInterfaceNamePrefix", prefix);
+ 	intf->setProperty("IOInterfaceUnit", (unsigned long long)unit, 32);
+ 	intf->setProperty("HiddenConfiguration", kOSBooleanTrue);
++	intf->setProperty("IO80211InterfaceRole", "Infrastructure");
++	intf->setProperty("IOInterfaceName", bsd_name);
+ 	sweet_net_set_overrides(intf, ip, mask, router, dns1, dns2);
+ 	bool intf_ok = sweet_net_attach(intf, ctrl);
+ 	ctrl->release();

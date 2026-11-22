@@ -66,35 +66,6 @@ AppleWiFi::start(IOService *provider)
 	return true;
 }
 
-class IO80211Controller : public IOService {
-	OSDeclareDefaultStructors(IO80211Controller)
-public:
-	bool start(IOService *provider) override;
-};
-OSDefineMetaClassAndStructors(IO80211Controller, IOService)
-bool
-IO80211Controller::start(IOService *provider)
-{
-	if (!IOService::start(provider)) {
-		return false;
-	}
-	setProperty("IOClass", "IO80211Controller");
-	setProperty("IO80211ControllerRole", "Station");
-	/* wifid walks from its interface service up to the controller it belongs
-	 * to and reads the hardware address there (HakiOS' proven iOS layout). */
-	static const uint8_t controllerAddress[6] = { 0xe0, 0xdc, 0xff, 0xda, 0xf8, 0xe7 };
-	OSData *controllerMac = OSData::withBytes(controllerAddress, sizeof(controllerAddress));
-	if (controllerMac != NULL) {
-		setProperty("IOMACAddress", controllerMac);
-		controllerMac->release();
-	}
-	setProperty("IOBuiltin", kOSBooleanTrue);
-	registerService();
-	return true;
-}
-
-
-
 /*
  * A logging user client: IO80211.framework opens one on the interface and drives
  * Apple80211 through it. Answering every selector and printing the numbers turns
@@ -305,30 +276,24 @@ hakios_io80211_stub_start(void)
 		wifi->attach(parent);
 		wifi->start(parent);
 	}
-	IO80211Controller *controller = new IO80211Controller;
-	if (controller != NULL && controller->init()) {
-		controller->attach(parent);
-		controller->start(parent);
-	}
 	AppleWLANDriver *driver = new AppleWLANDriver;
 	if (driver != NULL && driver->init()) {
 		driver->attach(parent);
 		driver->start(parent);
 	}
-	/* The object wifid takes for its device hangs below the controller, the
-	 * way IO80211Family lays an interface out; its parent is where wifid reads
-	 * the hardware address and decides the interface is real, not virtual. */
+	/* The controller itself is SweetNetwork.cpp's IO80211Controller: configd
+	 * needs the class name on the parent of the IONetworkInterface it adopts,
+	 * and defining a second class of that name here would not link. */
 	IO80211SkywalkInterface *skywalk = new IO80211SkywalkInterface;
 	if (skywalk != NULL && skywalk->init()) {
-		IOService *skywalkParent = controller != NULL ? (IOService *)controller : parent;
-		skywalk->attach(skywalkParent);
-		skywalk->start(skywalkParent);
+		skywalk->attach(parent);
+		skywalk->start(parent);
 	}
 	AppleSunriseWLAN *sunrise = new AppleSunriseWLAN;
 	if (sunrise != NULL && sunrise->init()) {
 		sunrise->attach(parent);
 		sunrise->start(parent);
 	}
-	printf("HAKIOS IO80211: IO80211Interface/AppleWiFi/IO80211Controller/IO80211SkywalkInterface published (wifi_iokit=1)\n");
+	printf("HAKIOS IO80211: IO80211Interface/AppleWiFi/AppleWLANDriver/IO80211SkywalkInterface published (wifi_iokit=1)\n");
 	parent->release();
 }
