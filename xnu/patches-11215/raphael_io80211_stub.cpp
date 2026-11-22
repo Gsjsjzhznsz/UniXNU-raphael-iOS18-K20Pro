@@ -206,7 +206,10 @@ IO80211SkywalkInterface::start(IOService *provider)
 	setProperty("IOInterfaceNamePrefix", "en");
 	setProperty("IOInterfaceUnit", 0ULL, 32);
 	setProperty("IOBSDName", "en0");
-	setProperty("IOInterfaceType", "IEEE80211");
+	/* IFT_ETHER as a number, the way IO80211Family/HakiOS spell it; a string
+	 * here makes configd's and wifid's interface checks disagree. */
+	setProperty("IOInterfaceType", 6ULL, 32);
+	setProperty("IO80211SubType", "IEEE80211");
 	static const uint8_t wifiAddress[6] = { 0xe0, 0xdc, 0xff, 0xda, 0xf8, 0xe7 };
 	OSData *address = OSData::withBytes(wifiAddress, sizeof(wifiAddress));
 	if (address != NULL) {
