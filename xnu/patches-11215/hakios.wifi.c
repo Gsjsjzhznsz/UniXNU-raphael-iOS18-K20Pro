@@ -5508,6 +5508,10 @@ whole_thread(__unused void *parameter, __unused wait_result_t result)
 			tell("wifi: the radio's DSP is up and linked, %llu ms in; now the driver\n", (now_us() - began) / 1000);
 		}
 		if (steps[step - 1]()) {
+			if (step == 15 && hakios_is_raphael()) {
+				lx_os_net_link(1);
+				printf("wifi: raphael link-up announced after step 15\\n");
+			}
 			done = step;
 		} else {
 			failed = step;
