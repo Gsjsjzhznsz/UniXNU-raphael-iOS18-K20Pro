@@ -174,25 +174,15 @@ IOReturn
 IO80211SkywalkInterface::newUserClient(task_t owningTask, void *securityID, UInt32 type,
     OSDictionary *properties, IOUserClient **handler)
 {
-	IO80211UserClient *client = new IO80211UserClient;
-	if (client == NULL) {
-		return kIOReturnNoMemory;
-	}
-	if (!client->initWithTask(owningTask, securityID, type, properties)) {
-		client->release();
-		return kIOReturnError;
-	}
-	if (!client->attach(this)) {
-		client->release();
-		return kIOReturnError;
-	}
-	if (!client->start(this)) {
-		client->detach(this);
-		client->release();
-		return kIOReturnError;
-	}
-	*handler = client;
-	return kIOReturnSuccess;
+	/* Match the working HakiOS path: no user client means IO80211.framework
+	 * falls back to SIOCGA/SIOCSA80211 on BSD en0. A fake successful client
+	 * traps iOS 18 in the Skywalk path and prevents those ioctls entirely. */
+	printf("HAKIOS IO80211: user client type %u unsupported; forcing ioctl fallback\n", (unsigned)type);
+	(void)owningTask;
+	(void)securityID;
+	(void)properties;
+	(void)handler;
+	return kIOReturnUnsupported;
 }
 bool
 IO80211SkywalkInterface::start(IOService *provider)
