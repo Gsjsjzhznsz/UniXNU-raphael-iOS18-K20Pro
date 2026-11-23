@@ -204,6 +204,28 @@ jobs:
           sudo umount /mnt/comp
           sudo losetup -d "$DEV"
 
+      - name: Inject the SSH public key into the root image
+        if: always()
+        run: |
+          set -euo pipefail
+          RAW=$(find -L research -name '*.img' -type f -size +10G | head -1)
+          [ -n "$RAW" ] || { echo "no raw root image"; exit 1; }
+          KEY="$HOME/.ssh/id_ed25519.pub"
+          [ -f "$KEY" ] || { echo "no public key staged in $KEY"; exit 1; }
+          sudo mkdir -p /mnt/ssh
+          sudo modprobe hfsplus
+          DEV=$(sudo losetup --find --show "$RAW")
+          sudo mount -t hfsplus -o rw,force "$DEV" /mnt/ssh
+          sudo mkdir -p /mnt/ssh/private/var/root/.ssh
+          sudo cp "$KEY" /mnt/ssh/private/var/root/.ssh/authorized_keys
+          sudo chown -R 0:0 /mnt/ssh/private/var/root/.ssh
+          sudo chmod 700 /mnt/ssh/private/var/root/.ssh
+          sudo chmod 600 /mnt/ssh/private/var/root/.ssh/authorized_keys
+          echo "== authorized_keys now:"; sudo cat /mnt/ssh/private/var/root/.ssh/authorized_keys
+          sync
+          sudo umount /mnt/ssh
+          sudo losetup -d "$DEV"
+
       - name: Verify Chlorophyll, the ssh key and the GPU firmware in the image
         continue-on-error: true
         run: |
